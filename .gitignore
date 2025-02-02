@@ -1,0 +1,8 @@
+**/.DS_Store
+
+# sensitive data
+**/secrets.h
+
+# other files
+main-old/
+.DS_Store
