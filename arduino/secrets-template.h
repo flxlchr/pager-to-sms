@@ -1,6 +1,5 @@
-/* DO NOT write your sensitive data into this `secrets_template.h` file!!
- *
- * instead, make a copy named `secrets.h` which is ignored by Git.
+/* DO NOT write your sensitive data into this `secrets_template.h` file
+ *instead, make a copy named `secrets.h` which is ignored by Git.
  */
 
 // Wifi
@@ -16,3 +15,5 @@ const char *TO_NUMBERS[] = {};
 
 // SMS
 const char *MESSAGE_HEADER = "\n";
+const char *MESSAGE_TEST_ALARM = "\n";
+const char *MESSAGE_INCOMING_ALARM = "\n";
