@@ -185,8 +185,8 @@ void setup()
   unsigned int counter_sms_all = storage.getUInt("counter_sms_all", 0); // AlarmID
   unsigned int counter_test = storage.getUInt("counter_test", 0);       // AlarmID
   unsigned int time_alarm_old = storage.getUInt("time_alarm_old", 0);   // time of last alarm
-  per_day_counter = storage.getUInt("per_day_counter", 0);              //
-  per_day_weekday = storage.getUInt("per_day_weekday", 0);              //
+  per_day_counter = storage.getUInt("per_day_counter", 0);
+  per_day_weekday = storage.getUInt("per_day_weekday", 0);
 
   // Debounce Buttons
   if (digitalRead(ALARM_RELAIS) == LOW && digitalRead(MANUAL_ALARM_BUTTON) == LOW)
@@ -227,7 +227,7 @@ void setup()
     int time_diff = calculateTimeDifferenceInSeconds(time_alarm_old, time_alarm_online_seconds);
     if (testalarm() == true)
     {
-      message += "Probealarm\n";
+      message += MESSAGE_TEST_ALARM;
       counter_probe++;
       storage.putUInt("counter_probe", counter_probe);
       if (digitalRead(SEND_TEST_ALARM) == LOW)
@@ -237,7 +237,7 @@ void setup()
     }
     else if (time_diff > 60 * TIME_DIFF)
     {
-      message += "SEG-Alarm\n";
+      message += MESSAGE_INCOMING_ALARMseg;
       counter++;
       storage.putUInt("counter", counter);
       storage.putUInt("time_alarm_old", time_alarm_online_seconds);
