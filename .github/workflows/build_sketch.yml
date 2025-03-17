@@ -22,8 +22,9 @@ jobs:
         arduino-cli lib install "WiFi"
         arduino-cli lib install "Preferences"
         arduino-cli lib install "NTPClient"
-        arduino-cli lib install "twilio-esp32"
         arduino-cli lib install "esp32_ftpclient"
+        git clone https://github.com/your-repo/twilio-esp32.git ~/Arduino/libraries/twilio-esp32
+
     
     - name: Create dummy `secrets.h` file
       run: |
