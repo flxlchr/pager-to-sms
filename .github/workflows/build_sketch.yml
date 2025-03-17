@@ -1,0 +1,35 @@
+name: Build ESP32 sketch
+on: [pull_request, push]
+
+jobs:
+  compile_sketch:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install arduino-cli
+      run: |
+        mkdir -p ~/.local/bin
+        curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=~/.local/bin sh
+    
+    - name: Install ESP32 core
+      run: |
+        arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+        arduino-cli core install esp32:esp32
+    
+    - name: Install required libraries
+      run: |
+        arduino-cli lib install "WiFi"
+        arduino-cli lib install "Preferences"
+        arduino-cli lib install "NTPClient"
+        arduino-cli lib install "twilio-esp32"
+        arduino-cli lib install "esp32_ftpclient"
+    
+    - name: Create dummy `secrets.h` file
+      run: |
+        cp Arduino/main/secrets_template.h Arduino/main/secrets.h
+    
+    - name: Compile main sketch
+      run: |
+        cd Arduino
+        arduino-cli compile -v --fqbn esp32:esp32:adafruit_feather_esp32_v2 main
