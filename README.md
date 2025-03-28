@@ -26,7 +26,7 @@ Go to parent directory of sketches (arduino folder), then
 ```
 arduino-cli compile --fqbn esp32:esp32:esp32wrover:UploadSpeed=115200 SKETCHNAME --upload -p PORTNAME
 ```
-
+Make sure, that the serial monitor is not running at the same time.
 ### Serial monitor
 ```
 arduino-cli monitor --port PORTNAME --config baudrate=115200
