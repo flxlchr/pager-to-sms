@@ -27,11 +27,12 @@ const char *TIMEZONE = "CET-1CEST,M3.5.0,M10.5.0/3"; // Middle european time zon
 
 bool send_sms = true;
 bool time_error = false;
-int day_now = 9;
-int hour_now = 9;
-int min_now = 99;
+unsigned int weekday_now = 9;
+unsigned int hour_now = 9;
+unsigned int min_now = 99;
+unsigned int day_of_year_now; // day of year
+unsigned int yearday_last;    // day of year of last alarm for the counter
 unsigned int per_day_counter; // alarms received per day
-unsigned int per_day_weekday; // weekday of last recorder allarm for the counter
 bool success = false;         // SMS sending success
 String response;              // Twilio response
 
@@ -52,7 +53,8 @@ String getLocalTime2() // renamed to avoid conflict with existing function
     return "Time: network error ";
   }
   // save for later
-  day_now = timeinfo.tm_wday;
+  weekday_now = timeinfo.tm_wday;
+  day_of_year_now = timeinfo.tm_yday;
   hour_now = timeinfo.tm_hour;
   min_now = timeinfo.tm_min;
   // Buffer to hold the formatted date string
@@ -99,7 +101,7 @@ int calculateTimeDifferenceInSeconds(int seconds1, int seconds2)
 // check if weekly test alarm
 bool testalarm()
 {
-  if (day_now == TEST_ALARM_DAY)
+  if (weekday_now == TEST_ALARM_DAY)
   {
     if (hour_now == TEST_ALARM_HOUR && min_now < TEST_ALARM_DELTA)
     {
@@ -118,14 +120,14 @@ bool testalarm()
 
 void maxAlarms()
 {
-  if (day_now == per_day_weekday)
+  if (day_of_year_now == yearday_last)
   {
     per_day_counter++;
   }
   else
   {
     per_day_counter = 0;
-    storage.putUInt("per_day_weekday", day_now);
+    yearday_last = day_of_year_now;
   }
   if (per_day_counter > MAX_ALARMS_PER_DAY)
   {
@@ -134,6 +136,8 @@ void maxAlarms()
     Serial.println("Max alarms per day reached");
   }
   storage.putUInt("per_day_counter", per_day_counter);
+  storage.end(); // flush to NVS
+  storage.begin("my-app", false);
 }
 
 void sleep()
@@ -201,7 +205,7 @@ void setup()
   unsigned int counter_test = storage.getUInt("counter_test", 0);       // AlarmID
   unsigned int time_alarm_old = storage.getUInt("time_alarm_old", 0);   // time of last alarm
   per_day_counter = storage.getUInt("per_day_counter", 0);
-  per_day_weekday = storage.getUInt("per_day_weekday", 0);
+  yearday_last = storage.getUInt("yearday_last", 0);
 
   // Debounce Buttons
   if (digitalRead(ALARM_RELAIS) == LOW && digitalRead(MANUAL_ALARM_BUTTON) == LOW)
@@ -244,11 +248,6 @@ void setup()
   String time_alarm_online = getLocalTime2();                             // time and date String
   int time_alarm_online_seconds = timeStringToSeconds(time_alarm_online); // convert to seconds since start of day
 
-  Serial.println("_________________");
-  Serial.printf("Hour: %d\n", hour_now);
-  Serial.printf("Mins: %d\n", min_now);
-  Serial.printf("Day: %d\n\n", day_now);
-
   // update message text
   if (wake_up_pin == ALARM_RELAIS)
   {
@@ -285,14 +284,15 @@ void setup()
     counter_test++;
     storage.putUInt("counter_test", counter_test);
   }
-  message += time_alarm_online;
-  message += "\nID: D" + String(per_day_counter) + "-P" + String(counter_probe) + "-A" + String(counter) + "-";
 
   // checks if more than 4 alarms were received today
   if (digitalRead(DEBUGGING) == LOW)
   {
     maxAlarms();
   }
+
+  message += time_alarm_online;
+  message += "\nID: D" + String(per_day_counter) + "-P" + String(counter_probe) + "-A" + String(counter) + "-";
 
   message += "S" + String(counter_sms_all) + "-";
   if (send_sms == true && digitalRead(SMS_ME) == HIGH)
@@ -303,6 +303,13 @@ void setup()
         storage.putUInt("counter_sms_all", counter_sms_all);
     success = twilio->send_message(TO_NUMBER, FROM_NUMBER, message + String((millis() - time_alarm_esp)), response);
   }
+
+  Serial.println("_________________");
+  Serial.printf("Hour: %d\n", hour_now);
+  Serial.printf("Mins: %d\n", min_now);
+  Serial.printf("Weekday now: %d\n", weekday_now);
+  Serial.printf("Day of year now: %d\n", day_of_year_now);
+  Serial.printf("Day of year last: %d\n\n", storage.getUInt("yearday_last", 2));
 
   Serial.printf("Send sms: %d\n", send_sms);
   Serial.println("_________________\n");
