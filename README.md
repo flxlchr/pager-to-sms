@@ -36,4 +36,6 @@ arduino-cli monitor --port PORTNAME --config baudrate=115200
 
 If you experience connection issues with the Twilio library, you meed need to update the certificates in the digicert.cpp file, see also https://github.com/ademuri/twilio-esp32-client/blob/master/src/digicert.cpp 
 
+Depending on your provider, some SMS may be filtered and never reach the recipient. In my experience, SMS with ALL CAPS text are not as reliable as other SMS.
+
 As of 02/2025 it is also necessary to add ```#include <string>``` to twilio.cpp in the Twilio library

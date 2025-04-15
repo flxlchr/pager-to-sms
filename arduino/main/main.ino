@@ -126,7 +126,7 @@ void maxAlarms()
   }
   else
   {
-    per_day_counter = 0;
+    per_day_counter = 1;
     yearday_last = day_of_year_now;
   }
   if (per_day_counter > MAX_ALARMS_PER_DAY)
