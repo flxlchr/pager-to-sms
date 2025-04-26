@@ -45,30 +45,44 @@ String getLocalTime2() // renamed to avoid conflict with existing function
 {
   struct tm timeinfo;
   char buffer[21];
-  if (!getLocalTime(&timeinfo))
+  const int maxRetries = 5; // Maximum number of retries
+  int attempt = 0;
+
+  while (attempt < maxRetries)
   {
-    // return "Time: network error"; // Return an error message if time retrieval fails
-    Serial.println("Time: network error"); // Return an error message if time retrieval fails
-    time_error = true;
-    return "Time: network error ";
+    if (getLocalTime(&timeinfo))
+    {
+      // Success: save for later
+      weekday_now = timeinfo.tm_wday;
+      day_of_year_now = timeinfo.tm_yday;
+      hour_now = timeinfo.tm_hour;
+      min_now = timeinfo.tm_min;
+
+      // Format time
+      if (strftime(buffer, sizeof(buffer), "%d.%m.%Y, %H:%M:%S", &timeinfo))
+      {
+        time_error = false;
+        return String(buffer);
+      }
+      else
+      {
+        Serial.println("Time: format error");
+        time_error = true;
+        return "Time: format error";
+      }
+    }
+    else
+    {
+      Serial.println("Time: network error, retrying...");
+      time_error = true;
+      attempt++;
+      delay(500); // Wait a little before retrying
+    }
   }
-  // save for later
-  weekday_now = timeinfo.tm_wday;
-  day_of_year_now = timeinfo.tm_yday;
-  hour_now = timeinfo.tm_hour;
-  min_now = timeinfo.tm_min;
-  // Buffer to hold the formatted date string
-  if (strftime(buffer, sizeof(buffer), "%d.%m.%Y, %H:%M:%S", &timeinfo))
-  {
-    // Convert the char array to a String and return
-    return String(buffer);
-  }
-  else
-  {
-    Serial.println("Time: format error");
-    time_error = true;
-    return "Time: format error  ";
-  }
+
+  // If all retries fail
+  Serial.println("Time: network error (final)");
+  return "Time: network error";
 }
 
 // To determine which GPIO pin woke up the ESP32, either due to a button press or the pager relay
@@ -128,6 +142,7 @@ void maxAlarms()
   {
     per_day_counter = 1;
     yearday_last = day_of_year_now;
+    storage.putUInt("yearday_last", yearday_last);
   }
   if (per_day_counter > MAX_ALARMS_PER_DAY)
   {
