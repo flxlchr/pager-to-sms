@@ -6,7 +6,7 @@
 
 // Constants
 const int MAX_ALARMS_PER_DAY = 6;       // Avoid high SMS costs in case of a bug
-const int TIME_DIFF = 25;               // Avoid resending alarm if another one comes in within TIME_DIFF minutes
+const int TIME_DIFFERENCE = 5;          // Avoid resending alarm if another one comes in within TIME_DIFFERENCE minutes
 const int TEST_ALARM_DELTA = 5;         // Interpret as test alarm if it comes in within TEST_ALARM_DELTA minutes of the TEST_ALARM_HOUR
 const int TEST_ALARM_DAY = 6;           // Day of the test alarm, where 1 = Monday, 2 = Tuesday...
 const int TEST_ALARM_HOUR = 13;         // Time of day for test alarm
@@ -41,16 +41,16 @@ String message = MESSAGE_HEADER;
 // Set up permanent storage
 Preferences storage;
 
-String getLocalTime2() // renamed to avoid conflict with existing function
+String getTimeOnline() // renamed to avoid conflict with existing function
 {
   struct tm timeinfo;
   char buffer[21];
-  const int maxRetries = 5; // Maximum number of retries
+  const int maxRetries = 10; // Maximum number of retries
   int attempt = 0;
 
   while (attempt < maxRetries)
   {
-    if (getLocalTime(&timeinfo))
+    if (attempt > 1 && getLocalTime(&timeinfo)) // Try to get the local time, multiple attems to enhance relibility
     {
       // Success: save for later
       weekday_now = timeinfo.tm_wday;
@@ -73,13 +73,12 @@ String getLocalTime2() // renamed to avoid conflict with existing function
     }
     else
     {
-      Serial.println("Time: network error, retrying...");
+      Serial.println("Time: network error or attempt < 2, retrying...");
       time_error = true;
       attempt++;
       delay(500); // Wait a little before retrying
     }
   }
-
   // If all retries fail
   Serial.println("Time: network error (final)");
   return "Time: network error";
@@ -117,12 +116,12 @@ bool testalarm()
 {
   if (weekday_now == TEST_ALARM_DAY)
   {
-    if (hour_now == TEST_ALARM_HOUR && min_now < TEST_ALARM_DELTA)
+    if (hour_now == TEST_ALARM_HOUR && min_now < TEST_ALARM_DELTA) // after TEST_ALARM_HOUR
     {
       Serial.println("Test alarm");
       return true;
     }
-    if (hour_now == TEST_ALARM_HOUR - 1 && 60 - min_now < TEST_ALARM_DELTA)
+    else if (hour_now == TEST_ALARM_HOUR - 1 && 60 - min_now < TEST_ALARM_DELTA) // before TEST_ALARM_HOUR
     {
       Serial.println("Test alarm");
       return true;
@@ -258,9 +257,10 @@ void setup()
 
   // init and get the time
   configTime(0, 0, NTP_SERVER);
-  setenv("TZ", TIMEZONE, 1);                                              // Set the timezone and daylight saving time
-  tzset();                                                                // Update the timezone
-  String time_alarm_online = getLocalTime2();                             // time and date String
+  setenv("TZ", TIMEZONE, 1); // Set the timezone and daylight saving time
+  tzset();                   // Update the timezone
+  Serial.printf("TZ set to: %s\n", getenv("TZ"));
+  String time_alarm_online = getTimeOnline();                             // time and date String
   int time_alarm_online_seconds = timeStringToSeconds(time_alarm_online); // convert to seconds since start of day
 
   // update message text
@@ -278,7 +278,7 @@ void setup()
         send_sms = false;
       }
     }
-    else if (time_diff > 60 * TIME_DIFF)
+    else if (time_diff > 60 * TIME_DIFFERENCE)
     {
       message += MESSAGE_INCOMING_ALARM;
       counter++;
